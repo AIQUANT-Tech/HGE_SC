@@ -51,15 +51,15 @@ library
  
 -- Exposed your modules here
   exposed-modules:
-                  HGE.Validator
-                  HGE.Compiler
-                  HGE2.Validator
-                  HGE2.Compiler
+                  GuestIdentityAndReservation.Validator
+                  GuestIdentityAndReservation.Compiler
+                  DigitalKeyGeneration.Validator
+                  DigitalKeyGeneration.Compiler
  
 test-suite hge-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      Test
-  main-is:             TestHge.hs
+  main-is:             GuestIdentityAndReservationTestCase.hs
   build-depends:       
     base,
     tasty,
@@ -75,7 +75,7 @@ test-suite hge-test
 test-suite digital-key-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      Test
-  main-is:             Test.hs
+  main-is:             DigitalKeyGenerationTestCase.hs
   build-depends:       
     base,
     tasty,
