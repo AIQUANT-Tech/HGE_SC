@@ -1,0 +1,2 @@
+GuestIdentityAndReservation Smart Contract Script Address: addr_test1wpff7fpzg75nnuf2lry8qqzg6qn07ede7nxkezdy028xxuq64vsrw
+DigitalKeyGeneration Smart Contract Script Address: addr_test1wp57kt4axfajllx9f0dm2w9a9d0vl75r0zwxg8gws0zfemcsf5t3v
