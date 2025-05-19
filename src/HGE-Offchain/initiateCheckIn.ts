@@ -42,7 +42,7 @@ function isTrue(constr: any): boolean {
 
 export async function initiateCheckIn(
   guestAddress: string
-): Promise<{ updatedDatum: Constr<Data> }> {
+): Promise<{txHash:string, updatedDatum: Constr<Data> }> {
   const utxos = await lucid.utxosAt(scriptAddress1);
 
   const matchedUtxo = utxos.find((utxo) => {
@@ -68,23 +68,23 @@ export async function initiateCheckIn(
   const updatedDatum = new Constr(0, updatedFields);
   const redeemer = Data.to(new Constr(6, []));
 
-  // const tx = await lucid
-  //   .newTx()
-  //   .collectFrom([matchedUtxo], redeemer)
-  //   .attachSpendingValidator(hgeScript1)
-  //   .addSigner(adminAddress)
-  //   .payToContract(
-  //     scriptAddress1,
-  //     { inline: Data.to(updatedDatum) },
-  //     { lovelace: BigInt(10_000_000) }
-  //   )
-  //   .complete();
+  const tx = await lucid
+    .newTx()
+    .collectFrom([matchedUtxo], redeemer)
+    .attachSpendingValidator(hgeScript1)
+    .addSigner(adminAddress)
+    .payToContract(
+      scriptAddress1,
+      { inline: Data.to(updatedDatum) },
+      { lovelace: BigInt(10_000_000) }
+    )
+    .complete();
 
-  // const signedTx = await tx.sign().complete();
-  // const txHash = await signedTx.submit();
+  const signedTx = await tx.sign().complete();
+  const txHash = await signedTx.submit();
 
-  // console.log(`Smart Contract 1 updated: ${txHash}`);
-  return { updatedDatum };
+  console.log(`Smart Contract 1 updated: ${txHash}`);
+  return {txHash, updatedDatum };
 }
 
 /**
@@ -153,17 +153,17 @@ export async function processGuestCheckInFlow(
   let result = "";
 
   try {
-    const { updatedDatum } = await initiateCheckIn(guestAddr);
+    const {txHash, updatedDatum } = await initiateCheckIn(guestAddr);
 
-    // console.log("Waiting 40 seconds for SC1 confirmation...");
-    // await new Promise((res) => setTimeout(res, 40000));
+    console.log("Waiting 40 seconds for SC1 confirmation...");
+    await new Promise((res) => setTimeout(res, 40000));
 
     const txHash2 = await submitCheckInToContract2(updatedDatum);
 
-    //console.log("Smart Contract 1 TX:", txHash);
+    console.log("Smart Contract 1 TX:", txHash);
     console.log("Smart Contract 2 TX:", txHash2);
-    //result = `Smart Contract 1 TX: ${txHash}, Smart Contract 2 TX: ${txHash2}`;
-    result = `Smart Contract 2 TX: ${txHash2}`;
+    result = `Smart Contract 1 TX: ${txHash}, Smart Contract 2 TX: ${txHash2}`;
+    //result = `Smart Contract 2 TX: ${txHash2}`;
   } catch (err: any) {
     console.error("Check-in failed:", err.message);
     result = `Check-in failed: ${err.message}`;

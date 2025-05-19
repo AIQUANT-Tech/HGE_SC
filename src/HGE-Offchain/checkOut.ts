@@ -69,7 +69,9 @@ export async function checkOutSC1(guestAddress: string): Promise<string> {
   const signedTx = await tx.sign().complete();
   const txHash = await signedTx.submit();
   console.log(`SC-1 Check-out submitted: ${txHash}`);
-  return txHash;
+  const result = `SC-1 Check-out submitted: ${txHash}`;
+
+  return result;
 }
 
 export async function checkOutSC2(guestAddress: string): Promise<string> {
@@ -126,18 +128,19 @@ export async function checkOutSC2(guestAddress: string): Promise<string> {
   const signedTx = await tx.sign().complete();
   const txHash = await signedTx.submit();
   console.log(`SC-2 Check-out submitted: ${txHash}`);
-  return txHash;
+  const result = `SC-2 Check-out submitted: ${txHash}`;
+  return result;
 }
 
-export async function checkOutAll(guestAddress: string): Promise<string> {
-  // const tx1 = await checkOutSC1(guestAddress);
-  // console.log("Waiting 5 seconds for SC1 confirmation...");
-  // await new Promise((res) => setTimeout(res, 5000));
-  const tx2 = await checkOutSC2(guestAddress);
-  console.log("Waiting 5 seconds for SC1 confirmation...");
-  await new Promise((res) => setTimeout(res, 5000));
-  //console.log(`Check-out transactions submitted: SC-1: ${tx1}, SC-2: ${tx2}`);
-  return `Check-out transactions submitted: SC-2: ${tx2}`;
-}
+// export async function checkOutAll(guestAddress: string): Promise<string> {
+//   // const tx1 = await checkOutSC1(guestAddress);
+//   // console.log("Waiting 5 seconds for SC1 confirmation...");
+//   // await new Promise((res) => setTimeout(res, 5000));
+//   const tx2 = await checkOutSC2(guestAddress);
+//   console.log("Waiting 5 seconds for SC1 confirmation...");
+//   await new Promise((res) => setTimeout(res, 5000));
+//   //console.log(`Check-out transactions submitted: SC-1: ${tx1}, SC-2: ${tx2}`);
+//   return `Check-out transactions submitted: SC-2: ${tx2}`;
+// }
 
 //checkOutAll("New Town1")

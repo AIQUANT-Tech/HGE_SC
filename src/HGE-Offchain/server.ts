@@ -9,7 +9,7 @@ import { confirmIdentity } from "./confirmIdentity";
 import { processGuestCheckInFlow } from "./initiateCheckIn";
 import { generateDigitalKey } from "./generateDigitalKey";
 import { validateDigitalKey } from "./validateDigitalKey";
-import { checkOutAll } from "./checkOut";
+import { checkOutSC1, checkOutSC2 } from "./checkOut";
 const app = express();
 dotenv.config();
 
@@ -133,11 +133,22 @@ app.post("/validate-digital-key", async (req: any, res: any) => {
   }
 });
 
-//10. checkOut
-app.post("/check-out", async (req: any, res: any) => {
+//10. checkOut1
+app.post("/check-out1", async (req: any, res: any) => {
   const { guestAddress } = req.body;
   try {
-    const txHash = await checkOutAll(guestAddress);
+    const txHash = await checkOutSC1(guestAddress);
+    res.status(200).json({ success: true, txHash });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+//11. checkOut2
+app.post("/check-out2", async (req: any, res: any) => {
+  const { guestAddress } = req.body;
+  try {
+    const txHash = await checkOutSC2(guestAddress);
     res.status(200).json({ success: true, txHash });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
