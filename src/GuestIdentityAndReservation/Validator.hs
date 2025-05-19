@@ -12,8 +12,9 @@ import           Plutus.V2.Ledger.Api
 import           Plutus.V2.Ledger.Contexts
 import           PlutusTx
 import           PlutusTx.Prelude         hiding (Semigroup(..), unless)
+
 -- Redeemer type
-data GuestRedeemer = SubmitIdentity | VerifyIdentity | ConfirmIdentity | ReserveRoom | ConfirmReservation | InitiateCheckIn | CheckOut
+data GuestRedeemer = InitialSubmit | SubmitIdentity | VerifyIdentity | ConfirmIdentity | ReserveRoom | ConfirmReservation | InitiateCheckIn | CheckOut
 
 PlutusTx.unstableMakeIsData ''GuestRedeemer
 
@@ -61,23 +62,20 @@ mkValidator dat red ctx =
     in
     case red of
 
-        -- 1. SubmitIdentity: guest submits full identity details (name, passport number, photo hash, and address)
-        --0
-        SubmitIdentity ->
-            traceIfFalse "Guest address already set"    (guestAddress dat == emptyByteString) &&
-            traceIfFalse "Name already set"             (name dat == emptyByteString) &&
-            traceIfFalse "Passport number already set"  (passportNumber dat == emptyByteString) &&
-            traceIfFalse "Photo hash already set"       (photoHash dat == emptyByteString) &&
-            traceIfFalse "Admin PKH already set"        (adminPKH dat == emptyPubKeyHash) &&
+        -- 1. InitialSubmit: initial submission of guest address and admin PKH
+        -- 0
+        InitialSubmit ->
+            traceIfFalse "Guest address already set"  (guestAddress dat == emptyByteString) &&
+            traceIfFalse "Admin PKH already set"      (adminPKH dat == emptyPubKeyHash) &&
 
-            traceIfFalse "Guest address not submitted"   (guestAddress outDatum /= emptyByteString) &&
-            traceIfFalse "Name not submitted"            (name outDatum /= emptyByteString) &&
-            traceIfFalse "Passport number not submitted" (passportNumber outDatum /= emptyByteString) &&
-            traceIfFalse "Photo hash not submitted"      (photoHash outDatum /= emptyByteString) &&
-            traceIfFalse "Admin PKH not submitted"       (adminPKH outDatum /= emptyPubKeyHash) &&
+            traceIfFalse "Guest address not submitted" (guestAddress outDatum /= emptyByteString) &&
+            traceIfFalse "Admin PKH not submitted"     (adminPKH outDatum /= emptyPubKeyHash) &&
 
             traceIfFalse "Other fields must remain unchanged"
-                (  isUserVerified outDatum   == isUserVerified dat
+                (  name outDatum             == name dat
+                && passportNumber outDatum   == passportNumber dat
+                && photoHash outDatum        == photoHash dat
+                && isUserVerified outDatum   == isUserVerified dat
                 && identityStatus outDatum   == identityStatus dat
                 && isReserved outDatum       == isReserved dat
                 && initiateCheckIn outDatum  == initiateCheckIn dat
@@ -86,12 +84,37 @@ mkValidator dat red ctx =
                 && roomId outDatum           == roomId dat
                 && checkInDate outDatum      == checkInDate dat
                 && checkOutDate outDatum     == checkOutDate dat
-                
+                )
+        -- 2. SubmitIdentity: guest submits full identity details (name, passport number, photo hash, and address)
+        --1
+        SubmitIdentity ->
+            traceIfFalse "Not authorized admin" (txSignedBy info (adminPKH dat)) &&
+            traceIfFalse "Name already set"            (name dat == emptyByteString) &&
+            traceIfFalse "Passport number already set" (passportNumber dat == emptyByteString) &&
+            traceIfFalse "Photo hash already set"      (photoHash dat == emptyByteString) &&
+
+            traceIfFalse "Name not submitted"          (name outDatum /= emptyByteString) &&
+            traceIfFalse "Passport not submitted"      (passportNumber outDatum /= emptyByteString) &&
+            traceIfFalse "Photo hash not submitted"    (photoHash outDatum /= emptyByteString) &&
+
+            traceIfFalse "Other fields must remain unchanged"
+                (  guestAddress outDatum     == guestAddress dat
+                && adminPKH outDatum         == adminPKH dat
+                && isUserVerified outDatum   == isUserVerified dat
+                && identityStatus outDatum   == identityStatus dat
+                && isReserved outDatum       == isReserved dat
+                && initiateCheckIn outDatum  == initiateCheckIn dat
+                && reservationStatus outDatum== reservationStatus dat
+                && reservationId outDatum    == reservationId dat
+                && roomId outDatum           == roomId dat
+                && checkInDate outDatum      == checkInDate dat
+                && checkOutDate outDatum     == checkOutDate dat
                 )
 
 
-        -- 2. VerifyIdentity: admin verifies identity
-        --1
+
+        -- 3. VerifyIdentit // Use proper redeemer index for checkOuty: admin verifies identity
+        --2
         VerifyIdentity ->
             traceIfFalse "Not authorized admin" (txSignedBy info (adminPKH dat)) &&
 
@@ -121,7 +144,7 @@ mkValidator dat red ctx =
                 && checkOutDate outDatum    == checkOutDate dat
                 && adminPKH outDatum        == adminPKH dat
                 )
-        --2
+        --3
         ConfirmIdentity ->
             traceIfFalse "User is not verified yet" (isUserVerified dat == True) &&
             traceIfFalse "Identity status already confirmed" (identityStatus dat == False) &&
@@ -142,11 +165,12 @@ mkValidator dat red ctx =
                 && checkOutDate outDatum    == checkOutDate dat
                 && adminPKH outDatum        == adminPKH dat
                 )
+ // Use proper redeemer index for checkOut
 
-
-        -- 3. ReserveRoom: guest reserves a room
-        --3
+        -- 5. ReserveRoom: guest reserves a room
+        --4
         ReserveRoom ->
+            traceIfFalse "Not authorized admin" (txSignedBy info (adminPKH dat)) &&
             traceIfFalse "Room already reserved" (isReserved dat == False) &&
 
             traceIfFalse "Room ID already set"       (roomId dat == emptyByteString) &&
@@ -175,8 +199,8 @@ mkValidator dat red ctx =
 
 
         
-                -- 5. ConfirmReservation: confirms the reservation with a reservation ID
-                --4
+                -- 6. ConfirmReservation: confirms the reservation with a reservation ID
+                --5
         ConfirmReservation ->
             traceIfFalse "Reservation not yet made" (isReserved dat == True) &&
 
@@ -200,8 +224,8 @@ mkValidator dat red ctx =
                 && adminPKH outDatum         == adminPKH dat
                 
                 )
-        -- 6. CheckIn Initiation: marks the start of the pre-checkin process
-        --5
+        -- 7. CheckIn Initiation: marks the start of the pre-checkin process
+        --6
         InitiateCheckIn ->
             traceIfFalse "User not verified" (isUserVerified dat == True) &&
             traceIfFalse "Identity not confirmed" (identityStatus dat == True) &&
@@ -228,9 +252,10 @@ mkValidator dat red ctx =
                     
                     )
 
-        -- 9. CheckOut: user checks out
-        -- 8
+        -- 8. CheckOut: user checks out
+        -- 7
         CheckOut ->
+            traceIfFalse "Only admin can revoke access"     (txSignedBy info (adminPKH dat)) &&
             traceIfFalse "Reservation must be active before checkout" (isReserved dat == True) &&
             traceIfFalse "Reservation must be cleared after checkout" (isReserved outDatum == False) &&
 
@@ -255,6 +280,8 @@ mkValidator dat red ctx =
                 && identityStatus outDatum   == identityStatus dat
                 && adminPKH outDatum         == adminPKH dat
                 )
+        
+
 
        
         

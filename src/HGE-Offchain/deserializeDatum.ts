@@ -25,28 +25,43 @@ const hgeScript: Script = {
   script: cbor,
 };
 
+function isTrue(constr: any): boolean {
+  return constr?.index === 1;
+}
+
 const scriptAddress = lucid.utils.validatorToAddress(hgeScript);
 
 console.log(`HGE Address: ${scriptAddress}`);
 
 const utxos = await lucid.utxosAt(scriptAddress);
 console.log("UTXOs:", utxos);
-const matchedUtxo = utxos.find((utxo) => {
+// const matchedUtxo = utxos.find((utxo) => {
+//   if (!utxo.datum) return false;
+//   const datum = Data.from(utxo.datum) as Constr<Data>;
+//   return (
+//     toText(datum.fields[0] as string) ===
+//     "New Town"
+//   );
+// });
+
+const matchedUtxo1 = utxos.find((utxo) => {
   if (!utxo.datum) return false;
+
   const datum = Data.from(utxo.datum) as Constr<Data>;
-  return (
-    toText(datum.fields[0] as string) ===
-    "SaltLake Kolkata West Bengal India, 700135"
-  );
+  const addressMatch = toText(datum.fields[0] as string) === "New Town";
+  const identityVerified = isTrue(datum.fields[4]); // isIdentityApproved
+  const userVerified = isTrue(datum.fields[5]); // isUserVerified
+
+  return addressMatch && identityVerified && userVerified;
 });
 
-if (!matchedUtxo) {
+if (!matchedUtxo1) {
   console.log("No matching UTXO found");
   process.exit(1);
 }
 
-console.log(matchedUtxo);
-const oldDatum = Data.from(matchedUtxo.datum!) as Constr<Data>;
+console.log(matchedUtxo1);
+const oldDatum = Data.from(matchedUtxo1.datum!) as Constr<Data>;
 console.log("Old Datum:", oldDatum);
 
 export const decodeField = (field: any): any => {

@@ -8,7 +8,7 @@ import Plutus.V2.Ledger.Api
 import Plutus.V2.Ledger.Contexts
 import Plutus.V1.Ledger.Interval (always)
 import qualified PlutusTx.AssocMap as AssocMap
-import qualified HGE2.Validator as Validator
+import qualified DigitalKeyGeneration.Validator as Validator
 
 main :: IO ()
 main = defaultMain tests

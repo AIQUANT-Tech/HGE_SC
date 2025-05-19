@@ -13,14 +13,15 @@ dotenv.config();
 const lucid = await Lucid.new(
   new Blockfrost(
     "https://cardano-preprod.blockfrost.io/api/v0",
-    "preprodaObP3ncIxrfcxDhiWCDVYdsV6974tS4z"
+    process.env.BLOCKFROST_API_KEY!
   ),
   "Preprod"
 );
 
+const adminSeed = process.env.ADMIN_SEED!;
+lucid.selectWalletFromSeed(adminSeed);
 
 const cbor = process.env.CBOR1!;
-
 const hgeScript: Script = {
   type: "PlutusV2",
   script: cbor,
@@ -28,65 +29,66 @@ const hgeScript: Script = {
 
 const scriptAddress = lucid.utils.validatorToAddress(hgeScript);
 
-console.log(`HGE Address: ${scriptAddress}`);
+// // === Utility to check if a Constr is `true` (index 1) ===
+// function isTrue(constr: any): boolean {
+//   return constr?.index === 1;
+// }
 
-const adminSeed = process.env.ADMIN_SEED!;
-lucid.selectWalletFromSeed(adminSeed);
+// === Main Function ===
+export async function reserveRoom(
+  guestAddress: string,
+  roomId: string,
+  checkInDate: string,
+  checkOutDate: string
+): Promise<string> {
+  const adminAddress = await lucid.wallet.address();
 
-const adminAddress = await lucid.wallet.address();
+  const utxos = await lucid.utxosAt(scriptAddress);
+  const matchedUtxo = utxos.find((utxo) => {
+    if (!utxo.datum) return false;
+    const datum = Data.from(utxo.datum) as Constr<Data>;
+    return toText(datum.fields[0] as string) === guestAddress;
+  });
 
-const utxos = await lucid.utxosAt(scriptAddress);
-const matchedUtxo = utxos.find((utxo) => {
-  if (!utxo.datum) return false;
-  const datum = Data.from(utxo.datum) as Constr<Data>;
-  return (
-    toText(datum.fields[0] as string) ===
-    "SaltLake Kolkata West Bengal India, 700135"
-  );
-});
+  if (!matchedUtxo) {
+    throw new Error("No matching UTXO found for guestAddress");
+  }
 
-if (!matchedUtxo) {
-  console.log("No matching UTXO found");
-  process.exit(1);
+  const oldDatum = Data.from(matchedUtxo.datum!) as Constr<Data>;
+  const updatedFields = [...oldDatum.fields]; // clone
+
+  // Only update if isUserVerified and identityStatus are both true
+  // if (isTrue(updatedFields[4]) && isTrue(updatedFields[5])) {
+  updatedFields[6] = new Constr(1, []); // reservationStatus = true
+
+  updatedFields[10] = fromText(roomId);
+  updatedFields[11] = fromText(checkInDate);
+  updatedFields[12] = fromText(checkOutDate);
+  // } else {
+  //   throw new Error("User is not verified or identity not approved");
+  // }
+
+  const updatedDatum = new Constr(0, updatedFields);
+  const redeemer = Data.to(new Constr(4, [])); // custom redeemer index
+
+  const amount = 10_000_000; // 10 ADA
+  const tx = await lucid
+    .newTx()
+    .collectFrom([matchedUtxo], redeemer)
+    .attachSpendingValidator(hgeScript)
+    .addSigner(adminAddress)
+    .payToContract(
+      scriptAddress,
+      { inline: Data.to(updatedDatum) },
+      { lovelace: BigInt(amount) }
+    )
+    .complete();
+
+  const signedTx = await tx.sign().complete();
+  const txHash = await signedTx.submit();
+
+  console.log(`Transaction submitted for reservation room: ${txHash}`);
+  return `Transaction submitted for reservation room: ${txHash}`;
 }
 
-console.log(matchedUtxo);
-
-const oldDatum = Data.from(matchedUtxo.datum!) as Constr<Data>;
-
-const updatedFields = [...oldDatum.fields]; // Clone fields
-//updatedFields[4] = new Constr(1, []); // isUserVerified = true
-function isTrue(constr: any): boolean {
-  return constr?.index === 1;
-}
-
-if (isTrue(updatedFields[4]) && isTrue(updatedFields[5])) {
-  updatedFields[6] = new Constr(1, []);
-   //updatedFields[9]=fromText("54321"); // reservationId
-  updatedFields[10]=fromText("12345"); // roomId
-  updatedFields[11]=fromText("12/1/2025"); // checkInDate
-  updatedFields[12]=fromText("14/1/2025"); // checkOutDate
-}
-
-
-const updatedDatum = new Constr(0, updatedFields);
-
-const redeemer = Data.to(new Constr(3, []));
-
-const amount = 10_000_000; // 10 ADA
-const tx = await lucid
-  .newTx()
-  .collectFrom([matchedUtxo], redeemer)
-  .attachSpendingValidator(hgeScript)
-  .addSigner(adminAddress)
-  .payToContract(
-    scriptAddress,
-    { inline: Data.to(updatedDatum) },
-    {
-      lovelace: BigInt(amount),
-    }
-  )
-  .complete();
-const signedTx = await tx.sign().complete();
-const txHash = await signedTx.submit();
-console.log(`Transaction submitted: ${txHash}`);
+//const testReserveRoom = await reserveRoom("New Town", "12345", "2023-10-01", "2023-10-05");

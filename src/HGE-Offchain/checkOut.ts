@@ -8,88 +8,136 @@ import {
   toText,
 } from "lucid-cardano";
 import dotenv from "dotenv";
-import { decodeField } from "./deserializeDatum";
 dotenv.config();
 
-const lucid = await Lucid.new(
-  new Blockfrost(
-    "https://cardano-preprod.blockfrost.io/api/v0",
-    "preprodaObP3ncIxrfcxDhiWCDVYdsV6974tS4z"
-  ),
-  "Preprod"
-);
-
-
-const cbor = process.env.CBOR1!;
-
-const hgeScript: Script = {
-  type: "PlutusV2",
-  script: cbor,
-};
-
-const scriptAddress = lucid.utils.validatorToAddress(hgeScript);
-
-console.log(`HGE Address: ${scriptAddress}`);
-
-const adminSeed = process.env.ADMIN_SEED!;
-lucid.selectWalletFromSeed(adminSeed);
-
-const adminAddress = await lucid.wallet.address();
-
-const utxos = await lucid.utxosAt(scriptAddress);
-const matchedUtxo = utxos.find((utxo) => {
-  if (!utxo.datum) return false;
-  const datum = Data.from(utxo.datum) as Constr<Data>;
-  return (
-    toText(datum.fields[0] as string) ===
-    "SaltLake Kolkata West Bengal India, 700135"
+export async function checkOutSC1(guestAddress: string): Promise<string> {
+  const lucid = await Lucid.new(
+    new Blockfrost(
+      "https://cardano-preprod.blockfrost.io/api/v0",
+      process.env.BLOCKFROST_API_KEY!
+    ),
+    "Preprod"
   );
-});
 
-if (!matchedUtxo) {
-  console.log("No matching UTXO found");
-  process.exit(1);
+  const hgeScript1: Script = {
+    type: "PlutusV2",
+    script: process.env.CBOR1!,
+  };
+
+  const scriptAddress1 = lucid.utils.validatorToAddress(hgeScript1);
+  lucid.selectWalletFromSeed(process.env.ADMIN_SEED!);
+  const adminAddress = await lucid.wallet.address();
+
+  const utxos = await lucid.utxosAt(scriptAddress1);
+
+  const matchedUtxo = utxos.find((utxo) => {
+    if (!utxo.datum) return false;
+    const datum = Data.from(utxo.datum) as Constr<Data>;
+    return toText(datum.fields[0] as string) === guestAddress;
+  });
+
+  if (!matchedUtxo) {
+    throw new Error("No matching UTXO found for guest in SC-1");
+  }
+
+  const oldDatum = Data.from(matchedUtxo.datum!) as Constr<Data>;
+  const updatedFields = [...oldDatum.fields];
+
+  updatedFields[6] = new Constr(0, []); // initiateCheckIn = false
+  updatedFields[7] = new Constr(0, []); // reservationStatus = false
+  updatedFields[8] = new Constr(0, []); // isReserved = false
+  updatedFields[9] = fromText(""); // reservationId = ""
+  updatedFields[10] = fromText(""); // roomId = ""
+  updatedFields[11] = fromText(""); // checkInDate = ""
+  updatedFields[12] = fromText(""); // checkOutDate = ""
+
+  const updatedDatum = new Constr(0, updatedFields);
+  const redeemer = Data.to(new Constr(7, []));
+
+  const tx = await lucid
+    .newTx()
+    .collectFrom([matchedUtxo], redeemer)
+    .attachSpendingValidator(hgeScript1)
+    .addSigner(adminAddress)
+    .payToContract(
+      scriptAddress1,
+      { inline: Data.to(updatedDatum) },
+      { lovelace: BigInt(10_000_000) }
+    )
+    .complete();
+
+  const signedTx = await tx.sign().complete();
+  const txHash = await signedTx.submit();
+  console.log(`SC-1 Check-out submitted: ${txHash}`);
+  return txHash;
 }
 
-console.log(matchedUtxo);
+export async function checkOutSC2(guestAddress: string): Promise<string> {
+  const lucid = await Lucid.new(
+    new Blockfrost(
+      "https://cardano-preprod.blockfrost.io/api/v0",
+      process.env.BLOCKFROST_API_KEY!
+    ),
+    "Preprod"
+  );
 
-const oldDatum = Data.from(matchedUtxo.datum!) as Constr<Data>;
+  const hgeScript2: Script = {
+    type: "PlutusV2",
+    script: process.env.CBOR2!,
+  };
 
-//console.log("Decode Datum:", decodeField(oldDatum));
+  const scriptAddress2 = lucid.utils.validatorToAddress(hgeScript2);
+  lucid.selectWalletFromSeed(process.env.ADMIN_SEED!);
+  const adminAddress = await lucid.wallet.address();
 
+  const utxos = await lucid.utxosAt(scriptAddress2);
 
+  const matchedUtxo = utxos.find((utxo) => {
+    if (!utxo.datum) return false;
+    const datum = Data.from(utxo.datum) as Constr<Data>;
+    return toText(datum.fields[0] as string) === guestAddress;
+  });
 
+  if (!matchedUtxo) {
+    throw new Error("No matching UTXO found for guest in SC-2");
+  }
 
-const updatedFields = [...oldDatum.fields];
+  const oldDatum = Data.from(matchedUtxo.datum!) as Constr<Data>;
+  const updatedFields = [...oldDatum.fields];
 
+  updatedFields[3] = fromText(""); // digitalKeyHash = ""
+  updatedFields[4] = new Constr(0, []); // isDigitalKeyValidate = false
 
-    updatedFields[6] = new Constr(0, []); // initiateCheckIn = false
-    updatedFields[7] = new Constr(0, []); // reservationStatus = false
-    updatedFields[8] = new Constr(0, []); // isReserved = false
-    updatedFields[9] = fromText("");     // reservationId = ""
-    updatedFields[10] = fromText("");     // roomId = ""
-    updatedFields[11] = fromText("");     // checkInDate = ""
-    updatedFields[12] = fromText("");     // checkOutDate = ""
-    const updatedDatum = new Constr(0, updatedFields);
-    // console.log("Updated Datum:", decodeField(updatedDatum));
-    
+  const updatedDatum = new Constr(0, updatedFields);
+  const redeemer = Data.to(new Constr(3, []));
 
-const redeemer = Data.to(new Constr(6, []));
+  const tx = await lucid
+    .newTx()
+    .collectFrom([matchedUtxo], redeemer)
+    .attachSpendingValidator(hgeScript2)
+    .addSigner(adminAddress)
+    .payToContract(
+      scriptAddress2,
+      { inline: Data.to(updatedDatum) },
+      { lovelace: BigInt(10_000_000) }
+    )
+    .complete();
 
-const amount = 10_000_000; // 10 ADA
-const tx = await lucid
-  .newTx()
-  .collectFrom([matchedUtxo], redeemer)
-  .attachSpendingValidator(hgeScript)
-  .addSigner(adminAddress)
-  .payToContract(
-    scriptAddress,
-    { inline: Data.to(updatedDatum) },
-    {
-      lovelace: BigInt(amount),
-    }
-  )
-  .complete();
-const signedTx = await tx.sign().complete();
-const txHash = await signedTx.submit();
-console.log(`Transaction submitted: ${txHash}`);
+  const signedTx = await tx.sign().complete();
+  const txHash = await signedTx.submit();
+  console.log(`SC-2 Check-out submitted: ${txHash}`);
+  return txHash;
+}
+
+export async function checkOutAll(guestAddress: string): Promise<string> {
+  // const tx1 = await checkOutSC1(guestAddress);
+  // console.log("Waiting 5 seconds for SC1 confirmation...");
+  // await new Promise((res) => setTimeout(res, 5000));
+  const tx2 = await checkOutSC2(guestAddress);
+  console.log("Waiting 5 seconds for SC1 confirmation...");
+  await new Promise((res) => setTimeout(res, 5000));
+  //console.log(`Check-out transactions submitted: SC-1: ${tx1}, SC-2: ${tx2}`);
+  return `Check-out transactions submitted: SC-2: ${tx2}`;
+}
+
+//checkOutAll("New Town1")

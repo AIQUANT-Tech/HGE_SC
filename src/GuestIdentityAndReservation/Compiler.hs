@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 
-module GuestIdentityAndReservation.Compiler (writeHGEScript) where
+module GuestIdentityAndReservation.Compiler (writeGuestIdentityAndReservationScript) where
 
 import Cardano.Api
 import Codec.Serialise (serialise)
@@ -18,5 +18,5 @@ writeValidator :: FilePath -> Plutus.V2.Ledger.Api.Validator -> IO (Either (File
 writeValidator file = writeFileTextEnvelope @(PlutusScript PlutusScriptV2) file Nothing . PlutusScriptSerialised . SBS.toShort . LBS.toStrict . serialise . Plutus.V2.Ledger.Api.unValidatorScript
 
 -- It copies .plutus file in the output dir
-writeHGEScript :: IO (Either (FileError ()) ())
-writeHGEScript = writeValidator "output/hg.json" GuestIdentityAndReservation.validator
+writeGuestIdentityAndReservationScript :: IO (Either (FileError ()) ())
+writeGuestIdentityAndReservationScript = writeValidator "output/GuestIdentityAndReservation3.json" GuestIdentityAndReservation.validator

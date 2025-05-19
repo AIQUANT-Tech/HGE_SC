@@ -15,7 +15,7 @@ import           PlutusTx.Prelude         hiding (Semigroup(..), unless)
 
 
 -- Redeemer type
-data GuestRedeemer = SubmitIdentity | DigitalKeyGeneration | DigitalKeyValidation
+data GuestRedeemer = SubmitIdentity | DigitalKeyGeneration | DigitalKeyValidation | CheckOut
 PlutusTx.unstableMakeIsData ''GuestRedeemer
 
 -- Datum type
@@ -53,6 +53,7 @@ mkValidator dat red ctx =
     case red of
 
         -- 1. SubmitIdentity sets guestAddress, adminPKH 
+        --0
         SubmitIdentity ->
             traceIfFalse "Guest address already set"      (guestAddress dat == emptyByteString) &&
             traceIfFalse "Admin PKH already set"          (adminPKH dat == emptyPubKeyHash) &&
@@ -70,6 +71,7 @@ mkValidator dat red ctx =
                 )
 
         -- 2. DigitalKeyGeneration by admin
+        --1
         DigitalKeyGeneration ->
             traceIfFalse "Not authorized admin"             (txSignedBy info (adminPKH dat)) &&
             traceIfFalse "Check-in not initiated"           (initiateCheckIn dat == True) &&
@@ -85,6 +87,7 @@ mkValidator dat red ctx =
             
            
          -- 3. DigitalKeyValidation by user or system
+         --2
         DigitalKeyValidation ->
             traceIfFalse "Digital key not generated"         (digitalKey dat /= emptyByteString) &&
             traceIfFalse "Digital key must be validated"     (isDigitalKeyValidated outDatum == True) &&
@@ -94,7 +97,22 @@ mkValidator dat red ctx =
                 && adminPKH outDatum              == adminPKH dat
                 && digitalKey outDatum            == digitalKey dat
                 && initiateCheckIn outDatum       == initiateCheckIn dat
-                )    
+                ) 
+
+
+        -- 4. CheckOut: clear digital key and reset validation
+        --3
+        CheckOut ->
+            traceIfFalse "Only admin can revoke access"     (txSignedBy info (adminPKH dat)) &&
+            traceIfFalse "Digital key must be cleared"       (digitalKey outDatum == emptyByteString) &&
+            traceIfFalse "Validation flag must be reset"     (isDigitalKeyValidated outDatum == False) &&
+
+            traceIfFalse "Other fields must remain unchanged"
+                (  guestAddress outDatum    == guestAddress dat
+                && adminPKH outDatum        == adminPKH dat
+                && initiateCheckIn outDatum == initiateCheckIn dat
+                )
+   
  
 
        

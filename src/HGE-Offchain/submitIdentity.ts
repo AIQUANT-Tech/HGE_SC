@@ -5,6 +5,7 @@ import {
   Constr,
   fromText,
   Data,
+  toText,
 } from "lucid-cardano";
 import dotenv from "dotenv";
 dotenv.config();
@@ -26,49 +27,67 @@ const hgeScript: Script = {
 
 const scriptAddress = lucid.utils.validatorToAddress(hgeScript);
 
-console.log(`HGE Address: ${scriptAddress}`);
+//console.log(`HGE Address: ${scriptAddress}`);
 
 const adminSeed = process.env.ADMIN_SEED!;
 lucid.selectWalletFromSeed(adminSeed);
 
-const { paymentCredential } = lucid.utils.getAddressDetails(
-  await lucid.wallet.address()
-);
-const adminPKH = paymentCredential?.hash;
+//const adminAddress = await lucid.wallet.address();
 
+export async function submitIdentity(
+  guestAddress: string,
+  guestName: string,
+  passportNumber: string,
+  photoHash: string
+): Promise<string> {
+  const adminAddress = await lucid.wallet.address();
+  const utxos = await lucid.utxosAt(scriptAddress);
 
-// new Constr(0, []) // for false
-// new Constr(1, []) // for true
+  const matchedUtxo = utxos.find((utxo) => {
+    if (!utxo.datum) return false;
+    const datum = Data.from(utxo.datum) as Constr<Data>;
+    return toText(datum.fields[0] as string) === guestAddress;
+  });
 
-const guestDatum = new Constr(0, [
-  fromText("SaltLake Kolkata West Bengal India, 700135"), // guestAddress 0
-  fromText("Alice"), // name 1
-  fromText("P1123581321"), // passportNumber 2
-  fromText("bafybeihash..."), // photoHash (IPFS or CID hash) 3
-  new Constr(0, []), // isUserVerified 4
-  new Constr(0, []), // identityStatus 5
-  new Constr(0, []), // isReserved 6
-  new Constr(0, []), // initiateCheckIn 7
-  new Constr(0, []), // reservationStatus 8
-  fromText(""), // reservationId 9
-  fromText(""), // roomId 10
-  fromText(""), // checkInDate 11
-  fromText(""), // checkOutDate 12
-  adminPKH || "", // adminPKH (hex-encoded PubKeyHash) 13
-]);
+  if (!matchedUtxo) {
+    throw new Error("No matching UTXO found for the guest address");
+  }
 
+  const oldDatum = Data.from(matchedUtxo.datum!) as Constr<Data>;
+  const updatedFields = [...oldDatum.fields];
 
-const amount = 10_000_000; // 10 ADA
-const tx = await lucid
-  .newTx()
-  .payToContract(
-    scriptAddress,
-    { inline: Data.to(guestDatum) },
-    {
-      lovelace: BigInt(amount),
-    }
-  )
-  .complete();
-const signedTx = await tx.sign().complete();
-const txHash = await signedTx.submit();
-console.log(`Transaction submitted: ${txHash}`);
+  updatedFields[1] = fromText(guestName); // guestName
+  updatedFields[2] = fromText(passportNumber); // passportNumber
+  updatedFields[3] = fromText(photoHash); // photoHash
+
+  const updatedDatum = new Constr(0, updatedFields);
+  const redeemer = Data.to(new Constr(1, [])); // Custom redeemer
+
+  const amount = 10_000_000; // 10 ADA
+
+  const tx = await lucid
+    .newTx()
+    .collectFrom([matchedUtxo], redeemer)
+    .attachSpendingValidator(hgeScript)
+    .addSigner(adminAddress)
+    .payToContract(
+      scriptAddress,
+      { inline: Data.to(updatedDatum) },
+      { lovelace: BigInt(amount) }
+    )
+    .complete();
+
+  const signedTx = await tx.sign().complete();
+  const txHash = await signedTx.submit();
+
+  console.log(`Submit Identity. Transaction submitted: ${txHash}`);
+  const result = `Submit Identity. Transaction submitted: ${txHash}`;
+  return result;
+}
+
+// const testConfirmReservation = await submitIdentity(
+//   "New Town",
+//   "rajesh",
+//   "EXAMPLE12345678",
+//   "photoHash12345678"
+// );
