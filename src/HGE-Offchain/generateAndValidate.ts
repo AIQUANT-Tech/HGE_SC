@@ -47,7 +47,7 @@ function generateDigitalKeyFromDatum(identity: Constr<Data>): string {
 
 export async function generateAndValidateDigitalKey(
   guestAddress: string
-): Promise<string> {
+): Promise<{txHash:string,digitalKey:string}> {
   const utxos = await lucid.utxosAt(scriptAddress);
 
   const matchedUtxo = utxos.find((utxo) => {
@@ -100,7 +100,10 @@ export async function generateAndValidateDigitalKey(
   console.log("✅ Digital Key Generated:", digitalKey);
   console.log("✅ Transaction submitted:", txHash);
 
-  return txHash;
+  return {
+    txHash,
+    digitalKey
+  };
 }
 
 
