@@ -47,7 +47,6 @@ emptyDatum = Validator.GuestDatum
   , Validator.isUserVerified = False
   , Validator.identityStatus = False
   , Validator.isReserved = False
-  , Validator.initiateCheckIn = False
   , Validator.reservationStatus = False
   , Validator.reservationId = ""
   , Validator.roomId = ""
@@ -86,7 +85,6 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
               c11 = Validator.isUserVerified outputDatum == Validator.isUserVerified initialDatum
               c12 = Validator.identityStatus outputDatum == Validator.identityStatus initialDatum
               c13 = Validator.isReserved outputDatum == Validator.isReserved initialDatum
-              c14 = Validator.initiateCheckIn outputDatum == Validator.initiateCheckIn initialDatum
               c15 = Validator.reservationStatus outputDatum == Validator.reservationStatus initialDatum
               c16 = Validator.reservationId outputDatum == Validator.reservationId initialDatum
               c17 = Validator.roomId outputDatum == Validator.roomId initialDatum
@@ -94,7 +92,7 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
               c19 = Validator.checkOutDate outputDatum == Validator.checkOutDate initialDatum
               
               allConditions = c1 && c2 && c3 && c4 && c5 && c6 && c7 && c8 && c9 && c10 && 
-                              c11 && c12 && c13 && c14 && c15 && c16 && c17 && c18 && c19
+                              c11 && c12 && c13 && c15 && c16 && c17 && c18 && c19
           
           allConditions @?= True
 
@@ -137,7 +135,6 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
               c12 = Validator.photoHash outputDatum == Validator.photoHash initialDatum
               c13 = Validator.identityStatus outputDatum == Validator.identityStatus initialDatum
               c14 = Validator.isReserved outputDatum == Validator.isReserved initialDatum
-              c15 = Validator.initiateCheckIn outputDatum == Validator.initiateCheckIn initialDatum
               c16 = Validator.reservationStatus outputDatum == Validator.reservationStatus initialDatum
               c17 = Validator.reservationId outputDatum == Validator.reservationId initialDatum
               c18 = Validator.roomId outputDatum == Validator.roomId initialDatum
@@ -146,7 +143,7 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
               c21 = Validator.adminPKH outputDatum == Validator.adminPKH initialDatum
               
               allConditions = c1 && c2 && c3 && c4 && c5 && c6 && c7 && c8 && c9 && c10 && 
-                              c11 && c12 && c13 && c14 && c15 && c16 && c17 && c18 && c19 && c20 && c21
+                              c11 && c12 && c13 && c14 && c16 && c17 && c18 && c19 && c20 && c21
           
           allConditions @?= True
 
@@ -191,7 +188,6 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
               c7 = Validator.photoHash outputDatum == Validator.photoHash initialDatum
               c8 = Validator.isUserVerified outputDatum == Validator.isUserVerified initialDatum
               c9 = Validator.isReserved outputDatum == Validator.isReserved initialDatum
-              c10 = Validator.initiateCheckIn outputDatum == Validator.initiateCheckIn initialDatum
               c11 = Validator.reservationStatus outputDatum == Validator.reservationStatus initialDatum
               c12 = Validator.reservationId outputDatum == Validator.reservationId initialDatum
               c13 = Validator.roomId outputDatum == Validator.roomId initialDatum
@@ -199,7 +195,7 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
               c15 = Validator.checkOutDate outputDatum == Validator.checkOutDate initialDatum
               c16 = Validator.adminPKH outputDatum == Validator.adminPKH initialDatum
               
-              allConditions = c1 && c2 && c3 && c4 && c5 && c6 && c7 && c8 && c9 && c10 && 
+              allConditions = c1 && c2 && c3 && c4 && c5 && c6 && c7 && c8 && c9 &&
                               c11 && c12 && c13 && c14 && c15 && c16
           
           allConditions @?= True
@@ -254,13 +250,12 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
               c12 = Validator.photoHash outputDatum == Validator.photoHash initialDatum
               c13 = Validator.isUserVerified outputDatum == Validator.isUserVerified initialDatum
               c14 = Validator.identityStatus outputDatum == Validator.identityStatus initialDatum
-              c15 = Validator.initiateCheckIn outputDatum == Validator.initiateCheckIn initialDatum
               c16 = Validator.reservationStatus outputDatum == Validator.reservationStatus initialDatum
               c17 = Validator.reservationId outputDatum == Validator.reservationId initialDatum
               c18 = Validator.adminPKH outputDatum == Validator.adminPKH initialDatum
               
               allConditions = c1 && c2 && c3 && c4 && c5 && c6 && c7 && c8 && c9 && c10 && 
-                              c11 && c12 && c13 && c14 && c15 && c16 && c17 && c18
+                              c11 && c12 && c13 && c14 && c16 && c17 && c18
           
           allConditions @?= True
 
@@ -314,14 +309,13 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
               c9 = Validator.isUserVerified outputDatum == Validator.isUserVerified initialDatum
               c10 = Validator.identityStatus outputDatum == Validator.identityStatus initialDatum
               c11 = Validator.isReserved outputDatum == Validator.isReserved initialDatum
-              c12 = Validator.initiateCheckIn outputDatum == Validator.initiateCheckIn initialDatum
               c13 = Validator.roomId outputDatum == Validator.roomId initialDatum
               c14 = Validator.checkInDate outputDatum == Validator.checkInDate initialDatum
               c15 = Validator.checkOutDate outputDatum == Validator.checkOutDate initialDatum
               c16 = Validator.adminPKH outputDatum == Validator.adminPKH initialDatum
               
               allConditions = c1 && c2 && c3 && c4 && c5 && c6 && c7 && c8 && c9 && c10 && 
-                              c11 && c12 && c13 && c14 && c15 && c16
+                              c11 && c13 && c14 && c15 && c16
           
           allConditions @?= True
 
@@ -360,16 +354,14 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
                 , Validator.adminPKH = testAdmin
                 }
               outputDatum = initialDatum
-                { Validator.initiateCheckIn = True
-                }
+                -- { Validator.initiateCheckIn = True
+                -- }
               
               -- Test conditions directly
               c1 = Validator.isUserVerified initialDatum == True
               c2 = Validator.identityStatus initialDatum == True
               c3 = Validator.isReserved initialDatum == True
               c4 = Validator.reservationStatus initialDatum == True
-              c5 = Validator.initiateCheckIn initialDatum == False
-              c6 = Validator.initiateCheckIn outputDatum == True
               
               c7 = Validator.guestAddress outputDatum == Validator.guestAddress initialDatum
               c8 = Validator.name outputDatum == Validator.name initialDatum
@@ -385,7 +377,7 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
               c18 = Validator.checkOutDate outputDatum == Validator.checkOutDate initialDatum
               c19 = Validator.adminPKH outputDatum == Validator.adminPKH initialDatum
               
-              allConditions = c1 && c2 && c3 && c4 && c5 && c6 && c7 && c8 && c9 && c10 && 
+              allConditions = c1 && c2 && c3 && c4 && c7 && c8 && c9 && c10 && 
                               c11 && c12 && c13 && c14 && c15 && c16 && c17 && c18 && c19
           
           allConditions @?= True
@@ -418,7 +410,6 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
                 , Validator.isUserVerified = True
                 , Validator.identityStatus = True
                 , Validator.isReserved = True
-                , Validator.initiateCheckIn = True
                 , Validator.reservationStatus = True
                 , Validator.reservationId = "res_abc123"
                 , Validator.roomId = "room_101"
@@ -428,7 +419,6 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
                 }
               outputDatum = initialDatum
                 { Validator.isReserved = False
-                , Validator.initiateCheckIn = False
                 , Validator.reservationStatus = False
                 , Validator.reservationId = ""
                 , Validator.roomId = ""
@@ -441,8 +431,6 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
               c2 = Validator.isReserved outputDatum == False
               c3 = Validator.reservationStatus initialDatum == True
               c4 = Validator.reservationStatus outputDatum == False
-              c5 = Validator.initiateCheckIn initialDatum == True
-              c6 = Validator.initiateCheckIn outputDatum == False
               c7 = Validator.reservationId initialDatum /= ""
               c8 = Validator.reservationId outputDatum == ""
               c9 = Validator.roomId outputDatum == ""
@@ -457,7 +445,7 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
               c17 = Validator.identityStatus outputDatum == Validator.identityStatus initialDatum
               c18 = Validator.adminPKH outputDatum == Validator.adminPKH initialDatum
               
-              allConditions = c1 && c2 && c3 && c4 && c5 && c6 && c7 && c8 && c9 && c10 && 
+              allConditions = c1 && c2 && c3 && c4 && c7 && c8 && c9 && c10 && 
                               c11 && c12 && c13 && c14 && c15 && c16 && c17 && c18
           
           allConditions @?= True
@@ -471,7 +459,6 @@ tests = testGroup "HGE Hotel Guest Experience Validator Tests"
                 , Validator.isUserVerified = True
                 , Validator.identityStatus = True
                 , Validator.isReserved = False -- Not reserved
-                , Validator.initiateCheckIn = True
                 , Validator.reservationStatus = True
                 , Validator.adminPKH = testAdmin
                 }

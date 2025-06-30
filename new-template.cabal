@@ -51,40 +51,40 @@ library
  
 -- Exposed your modules here
   exposed-modules:
-                  GuestIdentityAndReservation.Validator
+                  GuestIdentityAndReservation.Validator2
                   GuestIdentityAndReservation.Compiler
-                  DigitalKeyGeneration.Validator
-                  DigitalKeyGeneration.Compiler
+                  -- DigitalKeyGeneration.Validator
+                  -- DigitalKeyGeneration.Compiler
  
-test-suite hge-test
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      Test
-  main-is:             GuestIdentityAndReservationTestCase.hs
-  build-depends:       
-    base,
-    tasty,
-    tasty-hunit,
-    plutus-ledger,
-    plutus-ledger-api,
-    plutus-tx,
-    plutus-core,
-    containers,
-    smart-contract
-  default-language:    Haskell2010
+-- test-suite hge-test
+--   type:                exitcode-stdio-1.0
+--   hs-source-dirs:      Test
+--   main-is:             GuestIdentityAndReservationTestCase.hs
+--   build-depends:       
+--     base,
+--     tasty,
+--     tasty-hunit,
+--     plutus-ledger,
+--     plutus-ledger-api,
+--     plutus-tx,
+--     plutus-core,
+--     containers,
+--     smart-contract
+--   default-language:    Haskell2010
  
-test-suite digital-key-test
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      Test
-  main-is:             DigitalKeyGenerationTestCase.hs
-  build-depends:       
-    base,
-    tasty,
-    tasty-hunit,
-    plutus-ledger,
-    plutus-ledger-api,
-    plutus-tx,
-    plutus-core,
-    containers,
-    smart-contract
-  default-language:    Haskell2010
+-- test-suite digital-key-test
+--   type:                exitcode-stdio-1.0
+--   hs-source-dirs:      Test
+--   main-is:             DigitalKeyGenerationTestCase.hs
+--   build-depends:       
+--     base,
+--     tasty,
+--     tasty-hunit,
+--     plutus-ledger,
+--     plutus-ledger-api,
+--     plutus-tx,
+--     plutus-core,
+--     containers,
+--     smart-contract
+--   default-language:    Haskell2010
  

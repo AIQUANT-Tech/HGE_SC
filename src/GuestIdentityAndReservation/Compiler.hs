@@ -12,11 +12,11 @@ import Cardano.Api.Shelley (PlutusScript (..))
 import PlutusTx.Prelude
 import Prelude (FilePath, IO)
 
-import GuestIdentityAndReservation.Validator as GuestIdentityAndReservation
+import GuestIdentityAndReservation.Validator2 as GuestIdentityAndReservation
 
 writeValidator :: FilePath -> Plutus.V2.Ledger.Api.Validator -> IO (Either (FileError ()) ())
 writeValidator file = writeFileTextEnvelope @(PlutusScript PlutusScriptV2) file Nothing . PlutusScriptSerialised . SBS.toShort . LBS.toStrict . serialise . Plutus.V2.Ledger.Api.unValidatorScript
 
 -- It copies .plutus file in the output dir
 writeGuestIdentityAndReservationScript :: IO (Either (FileError ()) ())
-writeGuestIdentityAndReservationScript = writeValidator "output/GuestIdentityAndReservation3.json" GuestIdentityAndReservation.validator
+writeGuestIdentityAndReservationScript = writeValidator "Guest/GuestIdentityAndReservation.plutus" GuestIdentityAndReservation.validator

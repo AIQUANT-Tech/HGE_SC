@@ -46,12 +46,12 @@ getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir :: 
 
 
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
-bindir     = "/home/rajesh/.cabal/bin"
-libdir     = "/home/rajesh/.cabal/lib/x86_64-linux-ghc-8.10.7/smart-contract-1.0.0-inplace"
-dynlibdir  = "/home/rajesh/.cabal/lib/x86_64-linux-ghc-8.10.7"
-datadir    = "/home/rajesh/.cabal/share/x86_64-linux-ghc-8.10.7/smart-contract-1.0.0"
-libexecdir = "/home/rajesh/.cabal/libexec/x86_64-linux-ghc-8.10.7/smart-contract-1.0.0"
-sysconfdir = "/home/rajesh/.cabal/etc"
+bindir     = "/home/prithwish-chakraborty/.cabal/bin"
+libdir     = "/home/prithwish-chakraborty/.cabal/lib/x86_64-linux-ghc-8.10.7/smart-contract-1.0.0-inplace"
+dynlibdir  = "/home/prithwish-chakraborty/.cabal/lib/x86_64-linux-ghc-8.10.7"
+datadir    = "/home/prithwish-chakraborty/.cabal/share/x86_64-linux-ghc-8.10.7/smart-contract-1.0.0"
+libexecdir = "/home/prithwish-chakraborty/.cabal/libexec/x86_64-linux-ghc-8.10.7/smart-contract-1.0.0"
+sysconfdir = "/home/prithwish-chakraborty/.cabal/etc"
 
 getBinDir     = catchIO (getEnv "smart_contract_bindir")     (\_ -> return bindir)
 getLibDir     = catchIO (getEnv "smart_contract_libdir")     (\_ -> return libdir)

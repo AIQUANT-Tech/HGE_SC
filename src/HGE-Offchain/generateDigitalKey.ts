@@ -124,6 +124,7 @@ export const decodeField = (field: any): any => {
   } else {
     return field;
   }
+  
 };
 
 export const generateDigitalKeyFromDatum = (datum: Constr<any>): string => {

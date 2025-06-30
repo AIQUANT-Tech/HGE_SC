@@ -1,7 +1,7 @@
 import express from "express";
 import { reserveRoom } from "./reserveRoom";
 import dotenv from "dotenv";
-import { intialSubmit } from "./intialSubmit";
+import { intialSubmit } from "./initialSubmit";
 import { confirmReservation } from "./confirmReservation";
 import { submitIdentity } from "./submitIdentity";
 import { verifyIdentity } from "./verifyIdentity";
@@ -10,6 +10,7 @@ import { processGuestCheckInFlow } from "./initiateCheckIn";
 import { generateDigitalKey } from "./generateDigitalKey";
 import { validateDigitalKey } from "./validateDigitalKey";
 import { checkOutSC1, checkOutSC2 } from "./checkOut";
+import { fullReservation } from "./fullReservation";
 const app = express();
 dotenv.config();
 
@@ -20,6 +21,25 @@ app.post("/intial-submit", async (req: any, res: any) => {
   const { guestAddress } = req.body;
   try {
     const txHash = await intialSubmit(guestAddress);
+    res.status(200).json({ success: true, txHash });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /full-reservation
+app.post("/full-reservation", async (req: any, res: any) => {
+  const { guestAddress, roomId, checkInDate, checkOutDate, reservationId } =
+    req.body;
+
+  try {
+    const txHash = await fullReservation(
+      guestAddress,
+      roomId,
+      checkInDate,
+      checkOutDate,
+      reservationId
+    );
     res.status(200).json({ success: true, txHash });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
