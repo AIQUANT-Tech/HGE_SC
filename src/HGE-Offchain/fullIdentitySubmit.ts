@@ -50,9 +50,9 @@ export async function fullIdentitySubmit(
   const oldDatum = Data.from(matchedUtxo.datum!) as Constr<Data>;
   const fields = [...oldDatum.fields];
 
-  // ================================
+
   // Update identity field (index 2)
-  // ================================
+ 
   const identityInfo = new Constr(0, [
     fromText(name),
     fromText(passportNumber),
@@ -83,7 +83,7 @@ export async function fullIdentitySubmit(
   const signedTx = await tx.sign().complete();
   const txHash = await signedTx.submit();
 
-  console.log(`✅ Identity info submitted. TX Hash: ${txHash}`);
+  console.log(` Identity info submitted. TX Hash: ${txHash}`);
   return txHash;
 }
 

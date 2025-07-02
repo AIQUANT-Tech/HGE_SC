@@ -93,6 +93,68 @@ unitTests = testGroup "Unit Tests"
           c3 = Validator.adminPKH inDatum == Validator.adminPKH outDatum
 
       (c1 && c2 && c3) @?= True
+
+      --Negative Checks
+
+  , testCase "Invalid: FullReservation also modifies identity (should not happen)" $ do
+      let inDatum = emptyDatum
+          outDatum = inDatum
+            { Validator.reservation = Validator.ReservationInfo True True "r" "r" "in" "out"
+            , Validator.identity = Validator.IdentityInfo "name" "pass" "hash" True True -- illegal change
+            }
+
+          changedIdentity = Validator.identity inDatum /= Validator.identity outDatum
+          unchangedOther  = Validator.guestAddress inDatum == Validator.guestAddress outDatum
+                        && Validator.adminPKH inDatum == Validator.adminPKH outDatum
+                        && Validator.keyInfo inDatum == Validator.keyInfo outDatum
+
+      (changedIdentity && unchangedOther) @?= True
+
+  , testCase "Invalid: FullIdentitySubmit without reservation (violates precondition)" $ do
+      let inDatum = emptyDatum -- reservation not made
+          outDatum = inDatum
+            { Validator.identity = Validator.IdentityInfo "A" "B" "C" True True }
+
+          identityWasBlank  = Validator.identity inDatum == Validator.IdentityInfo "" "" "" False False
+          identityNowSet    = Validator.identity outDatum == Validator.IdentityInfo "A" "B" "C" True True
+          reservationUnchanged = Validator.reservation inDatum == Validator.reservation outDatum
+
+      (identityWasBlank && identityNowSet && reservationUnchanged) @?= True
+
+  , testCase "Invalid: GenerateAndValidateKey with unverified identity" $ do
+      let inDatum = emptyDatum
+            { Validator.reservation = Validator.ReservationInfo True True "x" "y" "a" "b"
+            , Validator.identity = Validator.IdentityInfo "A" "B" "C" False False -- unverified
+            }
+
+          outDatum = inDatum
+            { Validator.keyInfo = Validator.KeyInfo True "KEY" True }
+
+          identityUnverified = Validator.isUserVerified (Validator.identity inDatum) == False
+          keySetProperly   = Validator.keyInfo outDatum == Validator.KeyInfo True "KEY" True
+
+      (identityUnverified && keySetProperly) @?= True
+
+
+  , testCase "Invalid: CheckOut wipes identity (should not happen)" $ do
+      let inDatum = emptyDatum
+            { Validator.identity = Validator.IdentityInfo "X" "Y" "Z" True True
+            , Validator.reservation = Validator.ReservationInfo True True "id" "r" "in" "out"
+            , Validator.keyInfo = Validator.KeyInfo True "KEY" True }
+
+          outDatum = inDatum
+            { Validator.reservation = Validator.ReservationInfo False False "" "" "" ""
+            , Validator.keyInfo = Validator.KeyInfo False "" False
+            , Validator.identity = Validator.IdentityInfo "" "" "" False False -- illegal wipe
+            }
+
+          changedIdentity = Validator.identity inDatum /= Validator.identity outDatum
+          clearedResv = Validator.reservation outDatum == Validator.ReservationInfo False False "" "" "" ""
+          clearedKey  = Validator.keyInfo outDatum == Validator.KeyInfo False "" False
+
+      (clearedResv && clearedKey && changedIdentity) @?= True
+
+
   ]
 
 propertyTests :: TestTree

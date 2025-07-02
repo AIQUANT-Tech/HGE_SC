@@ -89,7 +89,7 @@ export async function fullReservation(
   const signedTx = await tx.sign().complete();
   const txHash = await signedTx.submit();
 
-  console.log(`✅ Reservation submitted. TX Hash: ${txHash}`);
+  console.log(` Reservation submitted. TX Hash: ${txHash}`);
   return txHash;
 }
 

@@ -5,6 +5,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module GuestIdentityAndReservation.Validator2 where
 
@@ -12,17 +14,19 @@ import           Plutus.V2.Ledger.Api
 import           Plutus.V2.Ledger.Contexts
 import           PlutusTx
 import           PlutusTx.Prelude hiding (Semigroup(..), unless)
+import GHC.Generics (Generic)
+import qualified Prelude as P
 
-------------------------------------------------------
 -- Nested Types to Reduce Memory Footprint
-------------------------------------------------------
+
 data IdentityInfo = IdentityInfo
   { name            :: BuiltinByteString
   , passportNumber  :: BuiltinByteString
   , photoHash       :: BuiltinByteString
   , isUserVerified  :: Bool
   , identityStatus  :: Bool
-  }
+  } deriving (P.Show, Generic, P.Eq)
+
 PlutusTx.unstableMakeIsData ''IdentityInfo
 
 
@@ -33,7 +37,8 @@ data ReservationInfo = ReservationInfo
   , roomId            :: BuiltinByteString
   , checkInDate       :: BuiltinByteString
   , checkOutDate      :: BuiltinByteString
-  }
+  } deriving (P.Show, Generic, P.Eq)
+
 PlutusTx.unstableMakeIsData ''ReservationInfo
 
 
@@ -41,20 +46,22 @@ data KeyInfo = KeyInfo
   { initiateCheckIn       :: Bool
   , digitalKey            :: BuiltinByteString
   , isDigitalKeyValidated :: Bool
-  }
+  } deriving (P.Show, Generic, P.Eq)
+
 PlutusTx.unstableMakeIsData ''KeyInfo
 
 
-------------------------------------------------------
+
 -- Unified Datum and Redeemer Types
-------------------------------------------------------
+
 data GuestDatum = GuestDatum
   { guestAddress :: BuiltinByteString
   , adminPKH     :: PubKeyHash
   , identity     :: IdentityInfo
   , reservation  :: ReservationInfo
   , keyInfo      :: KeyInfo
-  }
+  } deriving (P.Show, Generic, P.Eq)
+
 PlutusTx.unstableMakeIsData ''GuestDatum
 
 
@@ -65,9 +72,8 @@ data GuestRedeemer
   | CheckOut
 PlutusTx.unstableMakeIsData ''GuestRedeemer
 
-------------------------------------------------------
 -- Helper Functions
-------------------------------------------------------
+
 {-# INLINABLE unchangedExceptReservation #-}
 unchangedExceptReservation :: GuestDatum -> GuestDatum -> Bool
 unchangedExceptReservation d1 d2 =
@@ -118,9 +124,9 @@ instance Eq KeyInfo where
     && digitalKey k1 == digitalKey k2
     && isDigitalKeyValidated k1 == isDigitalKeyValidated k2
 
-------------------------------------------------------
+
 -- Validator Logic
-------------------------------------------------------
+
 {-# INLINABLE mkValidator #-}
 mkValidator :: GuestDatum -> GuestRedeemer -> ScriptContext -> Bool
 mkValidator dat red ctx =

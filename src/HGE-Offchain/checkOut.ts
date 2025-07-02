@@ -91,10 +91,10 @@ export async function checkOut(guestAddress: string): Promise<string> {
 }
 
 // 🧪 Example usage:
-checkOut("ABCDEF")
-  .then((txHash) => {
-    console.log("🎉 Checkout TX Hash:", txHash);
-  })
-  .catch((err) => {
-    console.error("❌ Error in checkOut:", err);
-  });
+// checkOut("ABCDEF")
+//   .then((txHash) => {
+//     console.log("🎉 Checkout TX Hash:", txHash);
+//   })
+//   .catch((err) => {
+//     console.error("❌ Error in checkOut:", err);
+//   });
