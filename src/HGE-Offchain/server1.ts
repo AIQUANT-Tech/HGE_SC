@@ -6,7 +6,8 @@ import { initialSubmit } from "./initialSubmit"; // Step 1
 import { fullReservation } from "./fullReservation"; // Step 2
 import { fullIdentitySubmit } from "./fullIdentitySubmit"; // Step 3
 import { generateAndValidateDigitalKey } from "./generateAndValidate"; // Step 4
-import { checkOut } from "./checkOut"; // Step 5
+import { checkOut } from "./checkOut"; // Step 5\
+import {updateGuestAddress} from "./changeAddress";
 
 const app = express();
 app.use(express.json());
@@ -15,9 +16,9 @@ app.use(express.json());
  * 🟢 Step 1: Lock initial UTXO with guest and admin PkH
  */
 app.post("/submit-initial", async (req, res) => {
-  const { guestAddress } = req.body;
+  const { guestAddress,userId } = req.body;
   try {
-    const txHash = await initialSubmit(guestAddress);
+    const txHash = await initialSubmit(guestAddress,userId);
     res.status(200).json({ success: true, txHash });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
@@ -28,11 +29,18 @@ app.post("/submit-initial", async (req, res) => {
  * 🟢 Step 2: Full reservation update
  */
 app.post("/full-reservation", async (req, res) => {
-  const { guestAddress, roomId, checkInDate, checkOutDate, reservationId } =
-    req.body;
+  const {
+    guestAddress,
+    roomId,
+    checkInDate,
+    checkOutDate,
+    reservationId,
+    userId,
+  } = req.body;
   try {
     const txHash = await fullReservation(
       guestAddress,
+      userId,
       roomId,
       checkInDate,
       checkOutDate,
@@ -40,18 +48,21 @@ app.post("/full-reservation", async (req, res) => {
     );
     res.status(200).json({ success: true, txHash });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error("❌ Full reservation error:", err.message); // <== ADD THIS
+    res.status(500).json({ success: false, error: err.message }); // <== ADD ERROR MESSAGE
   }
 });
+
 
 /**
  * 🟢 Step 3: Submit full identity (name, passport, photoHash)
  */
 app.post("/submit-full-identity", async (req, res) => {
-  const { guestAddress, guestName, passportNumber, photoHash } = req.body;
+  const { guestAddress, guestName, passportNumber, photoHash,userId } = req.body;
   try {
     const txHash = await fullIdentitySubmit(
       guestAddress,
+      userId,
       guestName,
       passportNumber,
       photoHash
@@ -66,9 +77,9 @@ app.post("/submit-full-identity", async (req, res) => {
  * 🟢 Step 4: Generate and validate digital key
  */
 app.post("/generate-validate-key", async (req, res) => {
-  const { guestAddress } = req.body;
+  const { guestAddress,userId } = req.body;
   try {
-    const txHash = await generateAndValidateDigitalKey(guestAddress);
+    const txHash = await generateAndValidateDigitalKey(guestAddress,userId);
     res.status(200).json({ success: true, txHash });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
@@ -91,6 +102,29 @@ app.post("/check-out", async (req, res) => {
     });
   }
 });
+
+app.post("/update-guest-address", async (req, res) => {
+  const { newGuestAddress, userId } = req.body;
+
+  if (!newGuestAddress || !userId) {
+    return res.status(400).json({
+      success: false,
+      error: "Missing 'newGuestAddress' or 'userId' in request body",
+    });
+  }
+
+  try {
+    const txHash = await updateGuestAddress(newGuestAddress, userId);
+    res.status(200).json({ success: true, txHash });
+  } catch (err: any) {
+    console.error("❌ Error in /update-guest-address:", err);
+    res.status(500).json({
+      success: false,
+      error: err?.message || String(err),
+    });
+  }
+});
+
 
 const port = process.env.PORT || 5001;
 app.listen(port, () => {

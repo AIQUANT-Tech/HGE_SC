@@ -43,9 +43,8 @@ export async function checkOut(guestAddress: string): Promise<string> {
   const oldDatum = Data.from(matchedUtxo.datum!) as Constr<Data>;
   const fields = [...oldDatum.fields];
 
-  // ================================
   // Reset ReservationInfo (index 3)
-  // ================================
+
   const clearedReservationInfo = new Constr(0, [
     new Constr(0, []), // isReserved = false
     new Constr(0, []), // reservationStatus = false
@@ -57,9 +56,7 @@ export async function checkOut(guestAddress: string): Promise<string> {
 
   fields[3] = clearedReservationInfo;
 
-  // ================================
   // Reset KeyInfo (index 4)
-  // ================================
   const clearedKeyInfo = new Constr(0, [
     new Constr(0, []), // initiateCheckIn = false
     fromText(""), // digitalKey = ""

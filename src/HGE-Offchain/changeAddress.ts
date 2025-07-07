@@ -10,6 +10,7 @@ import {
 import dotenv from "dotenv";
 dotenv.config();
 
+// Lucid and script setup
 const lucid = await Lucid.new(
   new Blockfrost(
     "https://cardano-preprod.blockfrost.io/api/v0",
@@ -27,17 +28,14 @@ const guestScript: Script = {
 const scriptAddress = lucid.utils.validatorToAddress(guestScript);
 lucid.selectWalletFromSeed(process.env.ADMIN_SEED!);
 
-export async function fullIdentitySubmit(
-  guestAddress: string,
-  userId: string,
-  name: string,
-  passportNumber: string,
-  photoHash: string
+export async function updateGuestAddress(
+  newGuestAddress: string,
+  userId: string
 ): Promise<string> {
   const adminAddress = await lucid.wallet.address();
   const utxos = await lucid.utxosAt(scriptAddress);
 
-  // Find the correct UTXO (roomId == guestAddress)
+  // Find the UTXO for this guest using userId (index 5)
   const matchedUtxo = utxos.find((utxo) => {
     if (!utxo.datum) return false;
     const datum = Data.from(utxo.datum) as Constr<Data>;
@@ -45,29 +43,19 @@ export async function fullIdentitySubmit(
   });
 
   if (!matchedUtxo) {
-    throw new Error("No matching UTXO found for guest identity update");
+    throw new Error("No matching UTXO found for this userId");
   }
 
   const oldDatum = Data.from(matchedUtxo.datum!) as Constr<Data>;
   const fields = [...oldDatum.fields];
 
-
-  // Update identity field (index 2)
- 
-  const identityInfo = new Constr(0, [
-    fromText(name),
-    fromText(passportNumber),
-    fromText(photoHash),
-    new Constr(1, []),
-    new Constr(1, []),
-  ]);
-
-  fields[2] = identityInfo;
+  // Update guestAddress (index 0)
+  fields[0] = fromText(newGuestAddress);
 
   const updatedDatum = new Constr(0, fields);
 
-  // Correct redeemer index for FullIdentitySubmit (1)
-  const redeemer = Data.to(new Constr(1, []));
+  // Redeemer index 4 corresponds to UpdateAddress
+  const redeemer = Data.to(new Constr(4, []));
 
   const tx = await lucid
     .newTx()
@@ -84,20 +72,9 @@ export async function fullIdentitySubmit(
   const signedTx = await tx.sign().complete();
   const txHash = await signedTx.submit();
 
-  console.log(` Identity info submitted. TX Hash: ${txHash}`);
+  console.log("✅ Guest address updated. TX Hash:", txHash);
   return txHash;
 }
 
-// 🧪 Run the function with sample data
-// fullIdentitySubmit(
-//   "Zimba", // roomId or unique guest key
-//   "Alice Johnson", // name
-//   "P123456789", // passport number
-//   "f8d3b88101ae9b6e" // photo hash (SHA256 or IPFS hash)
-// )
-//   .then((txHash) => {
-//     console.log("🎉 Full Identity Submit TX Hash:", txHash);
-//   })
-//   .catch((err) => {
-//     console.error("❌ Error in fullIdentitySubmit:", err.message);
-//   });
+// 🧪 Example call:
+// updateGuestAddress("NewZimbaAddress", "guest@example.com");

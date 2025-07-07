@@ -60,6 +60,7 @@ data GuestDatum = GuestDatum
   , identity     :: IdentityInfo
   , reservation  :: ReservationInfo
   , keyInfo      :: KeyInfo
+  , userId       :: BuiltinByteString
   } deriving (P.Show, Generic, P.Eq)
 
 PlutusTx.unstableMakeIsData ''GuestDatum
@@ -70,6 +71,7 @@ data GuestRedeemer
   | FullIdentitySubmit
   | GenerateAndValidateKey
   | CheckOut
+  | UpdateAddress
 PlutusTx.unstableMakeIsData ''GuestRedeemer
 
 -- Helper Functions
@@ -81,6 +83,7 @@ unchangedExceptReservation d1 d2 =
   && keyInfo d1 == keyInfo d2
   && adminPKH d1 == adminPKH d2
   && guestAddress d1 == guestAddress d2
+  && userId d1 == userId d2
 
 {-# INLINABLE unchangedExceptIdentity #-}
 unchangedExceptIdentity :: GuestDatum -> GuestDatum -> Bool
@@ -89,6 +92,7 @@ unchangedExceptIdentity d1 d2 =
   && keyInfo d1 == keyInfo d2
   && adminPKH d1 == adminPKH d2
   && guestAddress d1 == guestAddress d2
+  && userId d1 == userId d2
 
 {-# INLINABLE unchangedExceptKeyInfo #-}
 unchangedExceptKeyInfo :: GuestDatum -> GuestDatum -> Bool
@@ -97,6 +101,7 @@ unchangedExceptKeyInfo d1 d2 =
   && reservation d1 == reservation d2
   && adminPKH d1 == adminPKH d2
   && guestAddress d1 == guestAddress d2
+  && userId d1 == userId d2
 
 instance Eq IdentityInfo where
   {-# INLINABLE (==) #-}
@@ -214,10 +219,25 @@ mkValidator dat red ctx =
         traceIfFalse "Other fields changed"
           ( identity dat      == identity outDatum &&
             adminPKH dat      == adminPKH outDatum &&
-            guestAddress dat  == guestAddress outDatum
+            guestAddress dat  == guestAddress outDatum &&
+            userId dat        == userId outDatum
           )
 
 
+    UpdateAddress ->
+      let newAddress = guestAddress outDatum
+          oldAddress = guestAddress dat
+      in traceIfFalse "Not admin" (txSignedBy info (adminPKH dat)) &&
+         traceIfFalse "Address not actually changed" (newAddress /= oldAddress) &&
+         traceIfFalse "Other fields modified"
+           ( identity dat     == identity outDatum &&
+             reservation dat  == reservation outDatum &&
+             keyInfo dat      == keyInfo outDatum &&
+             adminPKH dat     == adminPKH outDatum &&
+             userId dat       == userId outDatum
+           )
+
+      
 {-# INLINABLE wrapped #-}
 wrapped d r c =
   case (fromBuiltinData d, fromBuiltinData r, fromBuiltinData c) of

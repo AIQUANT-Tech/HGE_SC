@@ -8,7 +8,7 @@ import Test.Tasty.HUnit (testCase, (@?=))
 import Test.Tasty.QuickCheck as QC
 
 import qualified GuestIdentityAndReservation.Validator2 as Validator
-import Plutus.V2.Ledger.Api (PubKeyHash(..),toBuiltin)
+import Plutus.V2.Ledger.Api (PubKeyHash(..), toBuiltin)
 import qualified Data.ByteString.Char8 as BS
 
 main :: IO ()
@@ -18,11 +18,16 @@ main = defaultMain tests
 adminPKH :: PubKeyHash
 adminPKH = PubKeyHash "admin"
 
+-- Dummy user ID
+dummyUserId :: BS.ByteString
+dummyUserId = "guest@example.com"
+
 -- Empty datum for testing
 emptyDatum :: Validator.GuestDatum
 emptyDatum = Validator.GuestDatum
   { Validator.guestAddress = ""
   , Validator.adminPKH = adminPKH
+  , Validator.userId = toBuiltin dummyUserId
   , Validator.identity = Validator.IdentityInfo "" "" "" False False
   , Validator.reservation = Validator.ReservationInfo False False "" "" "" ""
   , Validator.keyInfo = Validator.KeyInfo False "" False
@@ -45,8 +50,9 @@ unitTests = testGroup "Unit Tests"
           c2 = Validator.keyInfo inDatum == Validator.keyInfo outDatum
           c3 = Validator.guestAddress inDatum == Validator.guestAddress outDatum
           c4 = Validator.adminPKH inDatum == Validator.adminPKH outDatum
+          c5 = Validator.userId inDatum == Validator.userId outDatum
 
-      (c1 && c2 && c3 && c4) @?= True
+      (c1 && c2 && c3 && c4 && c5) @?= True
 
   , testCase "FullIdentitySubmit: changes only identity" $ do
       let inDatum = emptyDatum
@@ -61,9 +67,9 @@ unitTests = testGroup "Unit Tests"
           c2 = Validator.keyInfo inDatum == Validator.keyInfo outDatum
           c3 = Validator.guestAddress inDatum == Validator.guestAddress outDatum
           c4 = Validator.adminPKH inDatum == Validator.adminPKH outDatum
+          c5 = Validator.userId inDatum == Validator.userId outDatum
 
-      (c0 && c1 && c2 && c3 && c4) @?= True
-
+      (c0 && c1 && c2 && c3 && c4 && c5) @?= True
 
   , testCase "GenerateAndValidateKey: only keyInfo changed correctly" $ do
       let inDatum = emptyDatum
@@ -75,8 +81,9 @@ unitTests = testGroup "Unit Tests"
           c2 = Validator.reservation inDatum == Validator.reservation outDatum
           c3 = Validator.guestAddress inDatum == Validator.guestAddress outDatum
           c4 = Validator.adminPKH inDatum == Validator.adminPKH outDatum
+          c5 = Validator.userId inDatum == Validator.userId outDatum
 
-      (c1 && c2 && c3 && c4) @?= True
+      (c1 && c2 && c3 && c4 && c5) @?= True
 
   , testCase "CheckOut: clears reservation and keyInfo only" $ do
       let inDatum = emptyDatum
@@ -91,27 +98,27 @@ unitTests = testGroup "Unit Tests"
           c1 = Validator.identity inDatum == Validator.identity outDatum
           c2 = Validator.guestAddress inDatum == Validator.guestAddress outDatum
           c3 = Validator.adminPKH inDatum == Validator.adminPKH outDatum
+          c4 = Validator.userId inDatum == Validator.userId outDatum
 
-      (c1 && c2 && c3) @?= True
+      (c1 && c2 && c3 && c4) @?= True
 
-      --Negative Checks
-
+  -- Negative tests
   , testCase "Invalid: FullReservation also modifies identity (should not happen)" $ do
       let inDatum = emptyDatum
           outDatum = inDatum
             { Validator.reservation = Validator.ReservationInfo True True "r" "r" "in" "out"
-            , Validator.identity = Validator.IdentityInfo "name" "pass" "hash" True True -- illegal change
-            }
+            , Validator.identity = Validator.IdentityInfo "name" "pass" "hash" True True }
 
           changedIdentity = Validator.identity inDatum /= Validator.identity outDatum
           unchangedOther  = Validator.guestAddress inDatum == Validator.guestAddress outDatum
                         && Validator.adminPKH inDatum == Validator.adminPKH outDatum
                         && Validator.keyInfo inDatum == Validator.keyInfo outDatum
+                        && Validator.userId inDatum == Validator.userId outDatum
 
       (changedIdentity && unchangedOther) @?= True
 
   , testCase "Invalid: FullIdentitySubmit without reservation (violates precondition)" $ do
-      let inDatum = emptyDatum -- reservation not made
+      let inDatum = emptyDatum
           outDatum = inDatum
             { Validator.identity = Validator.IdentityInfo "A" "B" "C" True True }
 
@@ -124,17 +131,15 @@ unitTests = testGroup "Unit Tests"
   , testCase "Invalid: GenerateAndValidateKey with unverified identity" $ do
       let inDatum = emptyDatum
             { Validator.reservation = Validator.ReservationInfo True True "x" "y" "a" "b"
-            , Validator.identity = Validator.IdentityInfo "A" "B" "C" False False -- unverified
-            }
+            , Validator.identity = Validator.IdentityInfo "A" "B" "C" False False }
 
           outDatum = inDatum
             { Validator.keyInfo = Validator.KeyInfo True "KEY" True }
 
-          identityUnverified = Validator.isUserVerified (Validator.identity inDatum) == False
-          keySetProperly   = Validator.keyInfo outDatum == Validator.KeyInfo True "KEY" True
+          identityUnverified = not (Validator.isUserVerified (Validator.identity inDatum))
+          keySetProperly     = Validator.keyInfo outDatum == Validator.KeyInfo True "KEY" True
 
       (identityUnverified && keySetProperly) @?= True
-
 
   , testCase "Invalid: CheckOut wipes identity (should not happen)" $ do
       let inDatum = emptyDatum
@@ -145,92 +150,91 @@ unitTests = testGroup "Unit Tests"
           outDatum = inDatum
             { Validator.reservation = Validator.ReservationInfo False False "" "" "" ""
             , Validator.keyInfo = Validator.KeyInfo False "" False
-            , Validator.identity = Validator.IdentityInfo "" "" "" False False -- illegal wipe
-            }
+            , Validator.identity = Validator.IdentityInfo "" "" "" False False }
 
           changedIdentity = Validator.identity inDatum /= Validator.identity outDatum
           clearedResv = Validator.reservation outDatum == Validator.ReservationInfo False False "" "" "" ""
           clearedKey  = Validator.keyInfo outDatum == Validator.KeyInfo False "" False
 
       (clearedResv && clearedKey && changedIdentity) @?= True
-
-
   ]
 
 propertyTests :: TestTree
 propertyTests = testGroup "Property-Based Tests"
   [ QC.testProperty "FullReservation: only reservation updated from initial state" $ 
-  \(resId :: String) (room :: String) (cin :: String) (cout :: String) ->
-    let inDatum = Validator.GuestDatum "addr" adminPKH
-                      (Validator.IdentityInfo "" "" "" False False)
-                      (Validator.ReservationInfo False False "" "" "" "")
-                      (Validator.KeyInfo False "" False)
+    \(resId :: String) (room :: String) (cin :: String) (cout :: String) ->
+      let inDatum = Validator.GuestDatum "addr" adminPKH (toBuiltin dummyUserId)
+                        (Validator.IdentityInfo "" "" "" False False)
+                        (Validator.ReservationInfo False False "" "" "" "")
+                        (Validator.KeyInfo False "" False)
 
-        resvOut = Validator.ReservationInfo
+          resvOut = Validator.ReservationInfo
+                      True True
+                      (toBuiltin $ BS.pack resId)
+                      (toBuiltin $ BS.pack room)
+                      (toBuiltin $ BS.pack cin)
+                      (toBuiltin $ BS.pack cout)
+
+          outDatum = inDatum { Validator.reservation = resvOut }
+
+      in Validator.identity inDatum == Validator.identity outDatum
+         && Validator.keyInfo inDatum == Validator.keyInfo outDatum
+         && Validator.adminPKH inDatum == Validator.adminPKH outDatum
+         && Validator.guestAddress inDatum == Validator.guestAddress outDatum
+         && Validator.userId inDatum == Validator.userId outDatum
+
+  , QC.testProperty "FullIdentitySubmit: only identity updated after reservation" $
+    \(nameVal :: String) (pass :: String) (photo :: String) ->
+      let idOut = Validator.IdentityInfo
+                    (toBuiltin $ BS.pack nameVal)
+                    (toBuiltin $ BS.pack pass)
+                    (toBuiltin $ BS.pack photo)
                     True True
-                    (toBuiltin $ BS.pack resId)
-                    (toBuiltin $ BS.pack room)
-                    (toBuiltin $ BS.pack cin)
-                    (toBuiltin $ BS.pack cout)
 
-        outDatum = inDatum { Validator.reservation = resvOut }
+          resv = Validator.ReservationInfo True True "resv" "room" "cin" "cout"
 
-    in Validator.identity inDatum == Validator.identity outDatum
-    && Validator.keyInfo inDatum == Validator.keyInfo outDatum
-    && Validator.adminPKH inDatum == Validator.adminPKH outDatum
-    && Validator.guestAddress inDatum == Validator.guestAddress outDatum
+          inDatum = Validator.GuestDatum "addr" adminPKH (toBuiltin dummyUserId)
+                        (Validator.IdentityInfo "" "" "" False False)
+                        resv
+                        (Validator.KeyInfo False "" False)
 
+          outDatum = inDatum { Validator.identity = idOut }
 
-   ,QC.testProperty "FullIdentitySubmit: only identity updated after reservation" $
-  \(nameVal :: String) (pass :: String) (photo :: String) ->
-    let idOut = Validator.IdentityInfo
-                  (toBuiltin $ BS.pack nameVal)
-                  (toBuiltin $ BS.pack pass)
-                  (toBuiltin $ BS.pack photo)
-                  True True
+      in Validator.reservation inDatum == Validator.reservation outDatum
+         && Validator.keyInfo inDatum == Validator.keyInfo outDatum
+         && Validator.adminPKH inDatum == Validator.adminPKH outDatum
+         && Validator.guestAddress inDatum == Validator.guestAddress outDatum
+         && Validator.userId inDatum == Validator.userId outDatum
 
-        resv = Validator.ReservationInfo True True "resv" "room" "cin" "cout"
+  , QC.testProperty "GenerateAndValidateKey: only keyInfo updated after identity & reservation" $
+    \(k :: String) ->
+      let idVal = Validator.IdentityInfo "X" "Y" "Z" True True
+          resv = Validator.ReservationInfo True True "resv" "room" "cin" "cout"
+          keyOut = Validator.KeyInfo True (toBuiltin $ BS.pack k) True
 
-        inDatum = Validator.GuestDatum "addr" adminPKH
-                      (Validator.IdentityInfo "" "" "" False False)
-                      resv
-                      (Validator.KeyInfo False "" False)
+          inDatum = Validator.GuestDatum "addr" adminPKH (toBuiltin dummyUserId)
+                        idVal resv (Validator.KeyInfo False "" False)
+          outDatum = inDatum { Validator.keyInfo = keyOut }
 
-        outDatum = inDatum { Validator.identity = idOut }
+      in Validator.identity inDatum == Validator.identity outDatum
+         && Validator.reservation inDatum == Validator.reservation outDatum
+         && Validator.adminPKH inDatum == Validator.adminPKH outDatum
+         && Validator.guestAddress inDatum == Validator.guestAddress outDatum
+         && Validator.userId inDatum == Validator.userId outDatum
 
-    in Validator.reservation inDatum == Validator.reservation outDatum
-    && Validator.keyInfo inDatum == Validator.keyInfo outDatum
-    && Validator.adminPKH inDatum == Validator.adminPKH outDatum
-    && Validator.guestAddress inDatum == Validator.guestAddress outDatum
+  , QC.testProperty "CheckOut: clears reservation and keyInfo, keeps rest unchanged" $
+    \(_ :: Bool) ->
+      let idVal = Validator.IdentityInfo "A" "B" "C" True True
+          resvBefore = Validator.ReservationInfo True True "id" "rm" "in" "out"
+          resvAfter  = Validator.ReservationInfo False False "" "" "" ""
+          keyBefore = Validator.KeyInfo True "KEY" True
+          keyAfter  = Validator.KeyInfo False "" False
 
-   ,QC.testProperty "GenerateAndValidateKey: only keyInfo updated after identity & reservation" $
-  \(k :: String) ->
-    let idVal = Validator.IdentityInfo "X" "Y" "Z" True True
-        resv = Validator.ReservationInfo True True "resv" "room" "cin" "cout"
-        keyOut = Validator.KeyInfo True (toBuiltin $ BS.pack k) True
+          inDatum = Validator.GuestDatum "addr" adminPKH (toBuiltin dummyUserId) idVal resvBefore keyBefore
+          outDatum = Validator.GuestDatum "addr" adminPKH (toBuiltin dummyUserId) idVal resvAfter keyAfter
 
-        inDatum = Validator.GuestDatum "addr" adminPKH idVal resv (Validator.KeyInfo False "" False)
-        outDatum = inDatum { Validator.keyInfo = keyOut }
-
-    in Validator.identity inDatum == Validator.identity outDatum
-    && Validator.reservation inDatum == Validator.reservation outDatum
-    && Validator.adminPKH inDatum == Validator.adminPKH outDatum
-    && Validator.guestAddress inDatum == Validator.guestAddress outDatum
-
-   ,QC.testProperty "CheckOut: clears reservation and keyInfo, keeps rest unchanged" $
-  \(_ :: Bool) ->
-    let idVal = Validator.IdentityInfo "A" "B" "C" True True
-        resvBefore = Validator.ReservationInfo True True "id" "rm" "in" "out"
-        resvAfter  = Validator.ReservationInfo False False "" "" "" ""
-        keyBefore = Validator.KeyInfo True "KEY" True
-        keyAfter  = Validator.KeyInfo False "" False
-
-        inDatum = Validator.GuestDatum "addr" adminPKH idVal resvBefore keyBefore
-        outDatum = Validator.GuestDatum "addr" adminPKH idVal resvAfter keyAfter
-
-    in Validator.identity inDatum == Validator.identity outDatum
-    && Validator.guestAddress inDatum == Validator.guestAddress outDatum
-    && Validator.adminPKH inDatum == Validator.adminPKH outDatum
-
+      in Validator.identity inDatum == Validator.identity outDatum
+         && Validator.guestAddress inDatum == Validator.guestAddress outDatum
+         && Validator.adminPKH inDatum == Validator.adminPKH outDatum
+         && Validator.userId inDatum == Validator.userId outDatum
   ]
-

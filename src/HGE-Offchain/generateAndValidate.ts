@@ -46,14 +46,15 @@ function generateDigitalKeyFromDatum(identity: Constr<Data>): string {
 }
 
 export async function generateAndValidateDigitalKey(
-  guestAddress: string
+  guestAddress: string,
+  userId: string
 ): Promise<{txHash:string,digitalKey:string}> {
   const utxos = await lucid.utxosAt(scriptAddress);
 
   const matchedUtxo = utxos.find((utxo) => {
     if (!utxo.datum) return false;
     const datum = Data.from(utxo.datum) as Constr<Data>;
-    return toText(datum.fields[0] as string) === guestAddress;
+    return toText(datum.fields[5] as string) === userId;
   });
 
   if (!matchedUtxo) {
@@ -78,6 +79,7 @@ export async function generateAndValidateDigitalKey(
     identity,
     reservation,
     updatedKeyInfo,
+    datum.fields[5]
   ]);
 
   const redeemer = Data.to(new Constr(2, [])); // GenerateAndValidateKey

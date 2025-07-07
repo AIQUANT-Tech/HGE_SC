@@ -9,9 +9,8 @@ import {
 import dotenv from "dotenv";
 dotenv.config();
 
-// ==============================
 // Setup Lucid with Blockfrost
-// ==============================
+
 const lucid = await Lucid.new(
   new Blockfrost(
     "https://cardano-preprod.blockfrost.io/api/v0",
@@ -34,14 +33,16 @@ const guestScript: Script = {
 };
 const scriptAddress = lucid.utils.validatorToAddress(guestScript);
 
-// ==============================
 // Initial Submit Function
-// ==============================
-export async function initialSubmit(guestAddress: string): Promise<string> {
+
+export async function initialSubmit(
+  guestAddress: string,
+  userId: string // 🛠️ should be lowercase 'string' (TS primitive)
+): Promise<string> {
   const { paymentCredential } = lucid.utils.getAddressDetails(address);
   const adminPKH = paymentCredential?.hash!;
 
-  // === Build IdentityInfo (empty)
+  // === IdentityInfo
   const identity = new Constr(0, [
     fromText(""), // name
     fromText(""), // passportNumber
@@ -50,7 +51,7 @@ export async function initialSubmit(guestAddress: string): Promise<string> {
     new Constr(0, []), // identityStatus = False
   ]);
 
-  // === Build ReservationInfo (empty)
+  // === ReservationInfo
   const reservation = new Constr(0, [
     new Constr(0, []), // isReserved = False
     new Constr(0, []), // reservationStatus = False
@@ -60,29 +61,30 @@ export async function initialSubmit(guestAddress: string): Promise<string> {
     fromText(""), // checkOutDate
   ]);
 
-  // === Build KeyInfo (empty)
+  // === KeyInfo
   const keyInfo = new Constr(0, [
     new Constr(0, []), // initiateCheckIn = False
     fromText(""), // digitalKey
     new Constr(0, []), // isDigitalKeyValidated = False
   ]);
 
-  // === Full GuestDatum
+  // === GuestDatum
   const guestDatum = new Constr(0, [
-    fromText(guestAddress),
-    adminPKH,
+    fromText(guestAddress), // guestAddress
+    adminPKH, // adminPKH (already BuiltinByteString)
     identity,
     reservation,
     keyInfo,
+    fromText(userId), // userId (email or guest id)
   ]);
 
-  // === Submit transaction to lock datum at script
+  // === Submit Transaction
   const tx = await lucid
     .newTx()
     .payToContract(
       scriptAddress,
       { inline: Data.to(guestDatum) },
-      { lovelace: 5_000_000n } // 5 ADA
+      { lovelace: 5_000_000n }
     )
     .complete();
 
@@ -94,4 +96,4 @@ export async function initialSubmit(guestAddress: string): Promise<string> {
 }
 
 // Optional auto-run
-// initialSubmit("Zimba");
+// initialSubmit("Zimba", "guest@example.com");

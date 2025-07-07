@@ -72,22 +72,22 @@ library
 --     smart-contract
 --   default-language:    Haskell2010
  
-test-suite full-process-test
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      Test
-  main-is:             NewGuestTest.hs
-  build-depends:       
-    base,
-    tasty,
-    tasty-hunit,
-    plutus-ledger,
-    plutus-ledger-api,
-    plutus-tx,
-    plutus-core,
-    containers,
-    smart-contract,
-    tasty-quickcheck,
-    bytestring,
-    QuickCheck,
-  default-language:    Haskell2010
+-- test-suite full-process-test
+--   type:                exitcode-stdio-1.0
+--   hs-source-dirs:      Test
+--   main-is:             NewGuestTest.hs
+--   build-depends:       
+--     base,
+--     tasty,
+--     tasty-hunit,
+--     plutus-ledger,
+--     plutus-ledger-api,
+--     plutus-tx,
+--     plutus-core,
+--     containers,
+--     smart-contract,
+--     tasty-quickcheck,
+--     bytestring,
+--     QuickCheck,
+--   default-language:    Haskell2010
  

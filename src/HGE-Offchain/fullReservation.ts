@@ -29,6 +29,7 @@ lucid.selectWalletFromSeed(process.env.ADMIN_SEED!);
 
 export async function fullReservation(
   guestAddress: string,
+  userId:string,
   roomId: string,
   checkInDate: string,
   checkOutDate: string,
@@ -41,7 +42,7 @@ export async function fullReservation(
   const matchedUtxo = utxos.find((utxo) => {
     if (!utxo.datum) return false;
     const datum = Data.from(utxo.datum) as Constr<Data>;
-    return toText(datum.fields[0] as string) === guestAddress;
+    return toText(datum.fields[5] as string) === userId;
   });
 
   if (!matchedUtxo) {
@@ -53,9 +54,7 @@ export async function fullReservation(
   // Clone existing fields
   const fields = [...oldDatum.fields];
 
-  // ================================
   // Update reservation field (index 3)
-  // ================================
   const newReservation = new Constr(0, [
     new Constr(1, []), // isReserved = True
     new Constr(1, []), // reservationStatus = True
