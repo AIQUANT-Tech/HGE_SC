@@ -10,7 +10,7 @@ import {
 import dotenv from "dotenv";
 dotenv.config();
 
-export async function checkOut(guestAddress: string): Promise<string> {
+export async function checkOut(guestAddress: string, userId: string): Promise<string> {
   const lucid = await Lucid.new(
     new Blockfrost(
       "https://cardano-preprod.blockfrost.io/api/v0",
@@ -33,7 +33,10 @@ export async function checkOut(guestAddress: string): Promise<string> {
   const matchedUtxo = utxos.find((utxo) => {
     if (!utxo.datum) return false;
     const datum = Data.from(utxo.datum) as Constr<Data>;
-    return toText(datum.fields[0] as string) === guestAddress;
+    return (
+      toText(datum.fields[5] as string) === userId &&
+      toText(datum.fields[0] as string) === guestAddress
+    );
   });
 
   if (!matchedUtxo) {

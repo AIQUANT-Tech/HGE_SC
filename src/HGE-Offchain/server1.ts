@@ -1,5 +1,9 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
+
+const app = express();
+app.use(cors());
 dotenv.config();
 
 import { initialSubmit } from "./initialSubmit"; // Step 1
@@ -9,7 +13,7 @@ import { generateAndValidateDigitalKey } from "./generateAndValidate"; // Step 4
 import { checkOut } from "./checkOut"; // Step 5\
 import {updateGuestAddress} from "./changeAddress";
 
-const app = express();
+//const app = express();
 app.use(express.json());
 
 /**
@@ -90,9 +94,9 @@ app.post("/generate-validate-key", async (req, res) => {
  * 🟢 Step 5: Checkout to clear reservation & key fields
  */
 app.post("/check-out", async (req, res) => {
-  const { guestAddress } = req.body;
+  const { guestAddress, userId } = req.body;
   try {
-    const txHash = await checkOut(guestAddress);
+    const txHash = await checkOut(guestAddress, userId);
     res.status(200).json({ success: true, txHash });
   } catch (err: any) {
     console.error("❌ Error in /check-out:", err);

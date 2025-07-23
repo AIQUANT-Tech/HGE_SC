@@ -42,7 +42,10 @@ export async function fullReservation(
   const matchedUtxo = utxos.find((utxo) => {
     if (!utxo.datum) return false;
     const datum = Data.from(utxo.datum) as Constr<Data>;
-    return toText(datum.fields[5] as string) === userId;
+    return (
+      toText(datum.fields[5] as string) === userId &&
+      toText(datum.fields[0] as string) === guestAddress
+    );
   });
 
   if (!matchedUtxo) {
